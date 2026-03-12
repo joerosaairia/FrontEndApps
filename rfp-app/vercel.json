@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    { "source": "/api/upload", "destination": "/api/upload" },
+    { "source": "/api/parse", "destination": "/api/parse" },
+    { "source": "/api/answer", "destination": "/api/answer" },
+    { "source": "/api/health", "destination": "/api/health" }
+  ],
+  "functions": {
+    "api/*.py": {
+      "runtime": "@vercel/python@4.5.0",
+      "maxDuration": 300
+    }
+  }
+}

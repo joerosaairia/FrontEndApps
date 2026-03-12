@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RFP Response Generator — Airia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #000000;
+    --surface: #1A1046;
+    --surface2: #150d38;
+    --border: #2d2365;
+    --text: #F2F2F2;
+    --text-dim: #9994b8;
+    --accent: #4E2FD2;
+    --accent-hover: #6242e8;
+    --accent-glow: rgba(78, 47, 210, 0.2);
+    --lavender: #B4B2FF;
+    --plum: #3E2BAB;
+    --chartreuse: #E1F018;
+    --aqua: #00C8F5;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --radius: 15px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(98,98,244,0.18) 0%, rgba(60,138,233,0.08) 40%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -15%;
+    right: -5%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(2,223,255,0.12) 0%, rgba(78,47,210,0.06) 45%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  header .logo-wrap {
+    position: relative;
+    height: 36px;
+    display: flex;
+    align-items: center;
+  }
+  header .logo-wrap img {
+    height: 36px;
+    width: auto;
+  }
+  /* Show only the gradient mark from the PNG, hide the black "airia" text */
+  header .logo-mark {
+    height: 36px;
+    width: 40px;
+    object-fit: cover;
+    object-position: left center;
+  }
+  header .logo-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #F2F2F2;
+    margin-left: 8px;
+    letter-spacing: -0.5px;
+  }
+  header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; }
+  header .subtitle { color: var(--text-dim); font-family: 'Space Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin-left: auto; }
+
+  /* Steps indicator */
+  .steps-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 32px;
+  }
+  .step-indicator {
+    flex: 1;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    transition: background 0.4s;
+  }
+  .step-indicator.active { background: linear-gradient(90deg, #6262F4, #3C8AE9, #02DFFF); }
+  .step-indicator.done { background: var(--green); }
+
+  .step-labels {
+    display: flex;
+    margin-bottom: 32px;
+    gap: 4px;
+  }
+  .step-label {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    transition: color 0.3s;
+  }
+  .step-label { font-family: 'Space Mono', monospace; }
+  .step-label.active { color: var(--lavender); font-weight: 600; }
+  .step-label.done { color: var(--green); }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+    background: rgba(26, 16, 70, 0.85);
+  }
+  .card h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  /* Upload area */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 48px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .upload-zone input { display: none; }
+  .upload-zone .icon { font-size: 36px; margin-bottom: 12px; display: block; }
+  .upload-zone .label { font-size: 15px; font-weight: 500; }
+  .upload-zone .hint { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: 8px;
+    margin-top: 16px;
+  }
+  .file-info .name { font-weight: 500; font-size: 14px; }
+  .file-info .size { color: var(--text-dim); font-size: 12px; margin-left: auto; }
+  .file-info .remove {
+    color: var(--red);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0 4px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 20px rgba(78, 47, 210, 0.4); }
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--text);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.08); }
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  /* Progress */
+  .progress-wrap {
+    margin-top: 20px;
+  }
+  .progress-bar-bg {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6262F4, #3C8AE9, #02DFFF);
+    border-radius: 3px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  /* Status pill */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .status-loading { background: rgba(180,178,255,0.15); color: var(--lavender); }
+  .status-success { background: rgba(52,211,153,0.15); color: var(--green); }
+  .status-error { background: rgba(248,113,113,0.15); color: var(--red); }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Questions table */
+  .questions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 16px;
+  }
+  .questions-table th {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    font-weight: 400;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .questions-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .questions-table tr:hover td { background: var(--surface2); }
+  .questions-table .col-check { width: 40px; text-align: center; }
+  .questions-table .col-id { width: 80px; color: var(--text-dim); font-family: monospace; font-size: 12px; }
+  .questions-table .col-cat { width: 140px; }
+  .questions-table .col-status { width: 100px; }
+
+  .cat-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--surface2);
+    white-space: nowrap;
+  }
+
+  .conf-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .conf-HIGH { background: rgba(52,211,153,0.15); color: var(--green); }
+  .conf-MEDIUM { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .conf-LOW { background: rgba(248,113,113,0.15); color: var(--red); }
+  .conf-ERROR { background: rgba(248,113,113,0.25); color: var(--red); }
+  .conf-UNKNOWN { background: var(--surface2); color: var(--text-dim); }
+
+  /* Answer expansion */
+  .answer-row td {
+    padding: 0 12px 16px 52px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .answer-content {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .answer-content .answer-text { margin-bottom: 8px; }
+  .answer-content .meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .answer-content .meta strong { color: var(--text); }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .summary-stat {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-stat .value { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; }
+  .summary-stat .label { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+  .hidden { display: none !important; }
+
+  /* Checkbox styling */
+  input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 16px; height: 16px;
+    cursor: pointer;
+  }
+
+  /* Scrollable table */
+  .table-wrap {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .table-wrap::-webkit-scrollbar { width: 6px; }
+  .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-success { background: var(--accent); color: #fff; }
+  .toast-error { background: var(--red); color: #fff; }
+
+  /* Row actions */
+  .row-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .btn-xs {
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-xs:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-retry { background: rgba(180,178,255,0.15); color: var(--lavender); }
+  .btn-retry:hover:not(:disabled) { background: rgba(180,178,255,0.3); }
+  .btn-edit { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .btn-edit:hover { background: rgba(251,191,36,0.3); }
+  .btn-save { background: rgba(52,211,153,0.15); color: var(--green); }
+  .btn-save:hover { background: rgba(52,211,153,0.3); }
+  .btn-cancel { background: var(--surface2); color: var(--text-dim); }
+  .btn-cancel:hover { background: var(--border); }
+
+  /* Editable cells */
+  .editable-cell {
+    position: relative;
+  }
+  .edit-textarea {
+    width: 100%;
+    min-height: 80px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+  }
+  .edit-textarea:focus { outline: none; border-color: var(--accent-hover); }
+  .edit-input {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: 12px;
+  }
+  .edit-input:focus { outline: none; border-color: var(--accent-hover); }
+
+  /* Retrying spinner in row */
+  .retrying-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--lavender);
+  }
+
+  /* Upload icon gradient */
+  .upload-zone .icon {
+    background: linear-gradient(135deg, #00CAFF, #4E2FD2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Checkbox accent */
+  input[type="checkbox"] {
+    accent-color: var(--accent);
+  }
+
+  /* Scrollbar */
+  .table-wrap::-webkit-scrollbar-thumb { background: var(--plum); }
+
+  /* Edit textarea focus */
+  .edit-textarea:focus, .edit-input:focus { border-color: var(--lavender); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-wrap">
+      <img class="logo-mark" src="airia-logo.png" alt="Airia">
+      <span class="logo-text">airia</span>
+    </div>
+    <div>
+      <h1>RFP Response Generator</h1>
+    </div>
+    <span class="subtitle">Powered by AI</span>
+  </header>
+
+  <!-- Steps bar -->
+  <div class="steps-bar">
+    <div class="step-indicator active" id="si-1"></div>
+    <div class="step-indicator" id="si-2"></div>
+    <div class="step-indicator" id="si-3"></div>
+    <div class="step-indicator" id="si-4"></div>
+  </div>
+  <div class="step-labels">
+    <div class="step-label active" id="sl-1">Upload</div>
+    <div class="step-label" id="sl-2">Extract</div>
+    <div class="step-label" id="sl-3">Answer</div>
+    <div class="step-label" id="sl-4">Results</div>
+  </div>
+
+  <!-- Step 1: Upload -->
+  <div id="step-upload" class="card">
+    <h2>Upload RFP Document</h2>
+    <div class="upload-zone" id="drop-zone">
+      <span class="icon">+</span>
+      <div class="label">Drop your RFP file here or click to browse</div>
+      <div class="hint">Supports PDF, DOCX, XLSX, CSV, TXT, JSON</div>
+      <input type="file" id="file-input" accept=".pdf,.docx,.xlsx,.csv,.txt,.json">
+    </div>
+    <div id="file-info" class="file-info hidden">
+      <span class="name" id="file-name"></span>
+      <span class="size" id="file-size"></span>
+      <span class="remove" id="file-remove" title="Remove">&times;</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" id="btn-parse" disabled>Extract Questions</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Extracting -->
+  <div id="step-extracting" class="card hidden">
+    <h2>Extracting Questions</h2>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="status status-loading"><span class="spinner"></span> Analyzing document...</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="parse-progress" style="width:30%"></div></div>
+      <div class="progress-text">
+        <span>Uploading and parsing your document</span>
+        <span id="parse-timer">0s</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Review Questions -->
+  <div id="step-review" class="card hidden">
+    <h2>Extracted Questions <span id="q-count" style="color:var(--text-dim);font-weight:400;font-size:14px;"></span></h2>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Review the extracted questions. Uncheck any you don't want answered.</p>
+    <div class="table-wrap">
+      <table class="questions-table" id="questions-table">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" id="select-all" checked></th>
+            <th class="col-id">ID</th>
+            <th>Question</th>
+            <th class="col-cat">Category</th>
+          </tr>
+        </thead>
+        <tbody id="questions-body"></tbody>
+      </table>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" id="btn-answer">Answer Selected Questions</button>
+      <button class="btn btn-secondary" id="btn-back-upload">Back</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Answering -->
+  <div id="step-answering" class="card hidden">
+    <h2>Answering Questions</h2>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+      <span class="status status-loading" id="answering-status"><span class="spinner"></span> <span id="answering-label">Processing...</span></span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="answer-progress"></div></div>
+      <div class="progress-text">
+        <span id="answer-count">0 / 0 questions</span>
+        <span id="answer-timer">0s</span>
+      </div>
+    </div>
+    <div class="btn-group" id="live-results-btn-group" style="margin-bottom:0;">
+      <button class="btn btn-primary hidden" id="btn-view-results-early">View Completed Results</button>
+    </div>
+    <div class="table-wrap" style="margin-top:16px;max-height:none;">
+      <table class="questions-table" id="answers-live-table">
+        <thead>
+          <tr>
+            <th class="col-id">ID</th>
+            <th style="width:25%;">Question</th>
+            <th>Answer</th>
+            <th class="col-cat">Confidence</th>
+            <th style="width:120px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="answers-live-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Step 5: Results -->
+  <div id="step-results" class="card hidden">
+    <h2>Results</h2>
+    <div class="summary-grid" id="summary-grid"></div>
+    <div class="btn-group" style="margin-bottom:20px;">
+      <button class="btn btn-primary" id="btn-download">Download Excel</button>
+      <button class="btn btn-secondary" id="btn-back-progress" class="hidden">Back to Progress</button>
+      <button class="btn btn-secondary" id="btn-start-over">Start Over</button>
+    </div>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Click a row to expand. Use Edit to modify answers or Retry to re-generate.</p>
+    <div class="table-wrap" style="max-height:none;">
+      <table class="questions-table" id="results-table">
+        <thead>
+          <tr>
+            <th class="col-id">ID</th>
+            <th>Question</th>
+            <th style="width:30%;">Answer</th>
+            <th class="col-cat">Confidence</th>
+            <th style="width:110px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin + '/api';
+
+let selectedFile = null;
+let questions = [];
+let answers = [];
+let answeringDone = false;
+
+// ── DOM refs ────────────────────────────────────────────────────────
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const fileInfo = document.getElementById('file-info');
+const fileName = document.getElementById('file-name');
+const fileSize = document.getElementById('file-size');
+const fileRemove = document.getElementById('file-remove');
+const btnParse = document.getElementById('btn-parse');
+const btnAnswer = document.getElementById('btn-answer');
+const btnDownload = document.getElementById('btn-download');
+const btnStartOver = document.getElementById('btn-start-over');
+const btnBackUpload = document.getElementById('btn-back-upload');
+const selectAll = document.getElementById('select-all');
+
+// ── Step management ─────────────────────────────────────────────────
+function _showStep(step) {
+  ['upload','extracting','review','answering','results'].forEach(s => {
+    document.getElementById('step-' + s).classList.toggle('hidden', s !== step);
+  });
+  const stepMap = {upload:1, extracting:2, review:2, answering:3, results:4};
+  const current = stepMap[step] || 1;
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('si-' + i).className = 'step-indicator' + (i < current ? ' done' : i === current ? ' active' : '');
+    document.getElementById('sl-' + i).className = 'step-label' + (i < current ? ' done' : i === current ? ' active' : '');
+  }
+  // Show/hide back-to-progress button
+  const backBtn = document.getElementById('btn-back-progress');
+  if (step === 'results' && !answeringDone) {
+    backBtn.classList.remove('hidden');
+  } else {
+    backBtn.classList.add('hidden');
+  }
+}
+const showStep = _showStep;
+
+// ── File handling ───────────────────────────────────────────────────
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+function setFile(file) {
+  selectedFile = file;
+  fileName.textContent = file.name;
+  fileSize.textContent = formatSize(file.size);
+  fileInfo.classList.remove('hidden');
+  btnParse.disabled = false;
+}
+function clearFile() {
+  selectedFile = null;
+  fileInput.value = '';
+  fileInfo.classList.add('hidden');
+  btnParse.disabled = true;
+}
+
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => { if (e.target.files[0]) setFile(e.target.files[0]); });
+fileRemove.addEventListener('click', (e) => { e.stopPropagation(); clearFile(); });
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+});
+
+// ── Helpers ─────────────────────────────────────────────────────────
+function startTimer(el) {
+  const start = Date.now();
+  const interval = setInterval(() => { el.textContent = ((Date.now() - start) / 1000).toFixed(0) + 's'; }, 1000);
+  return () => clearInterval(interval);
+}
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast toast-' + type + ' show';
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// ── Parse flow ──────────────────────────────────────────────────────
+btnParse.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  showStep('extracting');
+  const stopTimer = startTimer(document.getElementById('parse-timer'));
+  const prog = document.getElementById('parse-progress');
+  try {
+    prog.style.width = '20%';
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    const upResp = await fetch(API + '/upload', { method: 'POST', body: formData });
+    const upData = await upResp.json();
+    if (upData.error) throw new Error(upData.error);
+    prog.style.width = '50%';
+    const parseResp = await fetch(API + '/parse', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: upData.url }),
+    });
+    prog.style.width = '90%';
+    const parseData = await parseResp.json();
+    if (parseData.error) throw new Error(parseData.error);
+    questions = parseData.questions;
+    prog.style.width = '100%';
+    stopTimer();
+    renderQuestions();
+    showStep('review');
+    toast(questions.length + ' questions extracted');
+  } catch (err) {
+    stopTimer();
+    toast('Error: ' + err.message, 'error');
+    showStep('upload');
+  }
+});
+
+// ── Render questions for review ─────────────────────────────────────
+function renderQuestions() {
+  document.getElementById('q-count').textContent = '(' + questions.length + ')';
+  const tbody = document.getElementById('questions-body');
+  tbody.innerHTML = '';
+  questions.forEach((q, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-check"><input type="checkbox" class="q-check" data-idx="${i}" checked></td>
+      <td class="col-id">${esc(q.id)}</td>
+      <td>${esc(q.question)}</td>
+      <td class="col-cat"><span class="cat-badge">${esc(q.category)}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+selectAll.addEventListener('change', () => {
+  document.querySelectorAll('.q-check').forEach(cb => cb.checked = selectAll.checked);
+});
+btnBackUpload.addEventListener('click', () => showStep('upload'));
+
+// ══════════════════════════════════════════════════════════════════════
+//  SHARED: Render an answer row (used in BOTH live table and results)
+// ══════════════════════════════════════════════════════════════════════
+function renderAnswerRow(prefix, idx) {
+  // prefix = 'live' or 'result'
+  const a = answers[idx];
+  const row = document.getElementById(prefix + '-row-' + idx);
+  if (!row) return;
+
+  if (!a) {
+    row.innerHTML = `
+      <td class="col-id">-</td>
+      <td style="color:var(--text-dim);">Waiting...</td>
+      <td>-</td>
+      <td class="col-cat"><span class="status status-loading"><span class="spinner"></span></span></td>
+      <td>-</td>
+    `;
+    return;
+  }
+
+  const conf = (a.confidence || 'UNKNOWN').toUpperCase();
+  const sources = Array.isArray(a.sources) ? a.sources.join(', ') : (a.sources || '');
+  const kp = Array.isArray(a.key_points) ? a.key_points : [];
+
+  row.innerHTML = `
+    <td class="col-id">${esc(a.id)}</td>
+    <td>${esc(a.question)}</td>
+    <td id="${prefix}-answer-${idx}">
+      <div style="white-space:pre-wrap;">${esc(a.answer)}</div>
+      ${sources ? '<div style="margin-top:6px;font-size:11px;color:var(--text-dim);"><strong>Sources:</strong> ' + esc(sources) + '</div>' : ''}
+      ${kp.length ? '<div style="margin-top:4px;font-size:11px;color:var(--text-dim);"><strong>Key Points:</strong> ' + kp.map(p => esc(p)).join(' / ') + '</div>' : ''}
+    </td>
+    <td class="col-cat" id="${prefix}-conf-${idx}"><span class="conf-badge conf-${conf}">${conf}</span></td>
+    <td id="${prefix}-actions-${idx}">
+      <div class="row-actions">
+        <button class="btn-xs btn-edit" onclick="startEdit('${prefix}',${idx})">Edit</button>
+        <button class="btn-xs btn-retry" id="${prefix}-retry-btn-${idx}" onclick="showRetryDialog('${prefix}',${idx})">Retry</button>
+      </div>
+    </td>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  RETRY — with optional user context
+// ══════════════════════════════════════════════════════════════════════
+function showRetryDialog(prefix, idx) {
+  const a = answers[idx];
+  if (!a) return;
+  const cell = document.getElementById(prefix + '-answer-' + idx);
+  const actionsCell = document.getElementById(prefix + '-actions-' + idx);
+  if (!cell || !actionsCell) return;
+
+  cell.innerHTML = `
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Add context to help the AI give a better answer (optional):</div>
+    <textarea class="edit-textarea" id="${prefix}-retry-context-${idx}" style="min-height:60px;" placeholder="e.g. We are SOC 2 Type II certified. Our encryption uses AES-256. Focus on our cloud-native architecture..."></textarea>
+  `;
+  actionsCell.innerHTML = `
+    <div class="row-actions">
+      <button class="btn-xs btn-save" onclick="executeRetry('${prefix}',${idx})">Retry</button>
+      <button class="btn-xs btn-cancel" onclick="renderAnswerRow('${prefix}',${idx})">Cancel</button>
+    </div>
+  `;
+}
+
+async function executeRetry(prefix, idx) {
+  const a = answers[idx];
+  if (!a) return;
+
+  const ctxEl = document.getElementById(prefix + '-retry-context-' + idx);
+  const context = ctxEl ? ctxEl.value.trim() : '';
+
+  const cell = document.getElementById(prefix + '-answer-' + idx);
+  const actionsCell = document.getElementById(prefix + '-actions-' + idx);
+  if (cell) cell.innerHTML = '<span class="retrying-indicator"><span class="spinner"></span> Re-generating...</span>';
+  if (actionsCell) actionsCell.innerHTML = '';
+
+  try {
+    const resp = await fetch(API + '/answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: a.question, context }),
+    });
+    const data = await resp.json();
+    answers[idx] = { ...a, ...data };
+    toast('Answer regenerated');
+  } catch (err) {
+    answers[idx] = { ...a, answer: 'Error: ' + err.message, confidence: 'ERROR', sources: [], key_points: [] };
+    toast('Retry failed', 'error');
+  }
+
+  renderAnswerRow(prefix, idx);
+  updateSummary();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  EDIT — inline editing with context field for re-generation
+// ══════════════════════════════════════════════════════════════════════
+function startEdit(prefix, idx) {
+  const a = answers[idx];
+  if (!a) return;
+
+  const cell = document.getElementById(prefix + '-answer-' + idx);
+  const actionsCell = document.getElementById(prefix + '-actions-' + idx);
+  if (!cell || !actionsCell) return;
+
+  const sourcesVal = Array.isArray(a.sources) ? a.sources.join(', ') : (a.sources || '');
+  const kpVal = Array.isArray(a.key_points) ? a.key_points.join('\n') : (a.key_points || '');
+
+  cell.innerHTML = `
+    <div style="margin-bottom:6px;">
+      <label style="font-size:11px;color:var(--text-dim);">Answer</label>
+      <textarea class="edit-textarea" id="${prefix}-edit-answer-${idx}">${esc(a.answer)}</textarea>
+    </div>
+    <div style="margin-bottom:6px;">
+      <label style="font-size:11px;color:var(--text-dim);">Sources (comma-separated)</label>
+      <input class="edit-input" id="${prefix}-edit-sources-${idx}" value="${esc(sourcesVal)}">
+    </div>
+    <div>
+      <label style="font-size:11px;color:var(--text-dim);">Key Points (one per line)</label>
+      <textarea class="edit-textarea" id="${prefix}-edit-kp-${idx}" style="min-height:50px;">${esc(kpVal)}</textarea>
+    </div>
+  `;
+
+  actionsCell.innerHTML = `
+    <div class="row-actions">
+      <button class="btn-xs btn-save" onclick="saveEdit('${prefix}',${idx})">Save</button>
+      <button class="btn-xs btn-cancel" onclick="renderAnswerRow('${prefix}',${idx})">Cancel</button>
+    </div>
+  `;
+}
+
+function saveEdit(prefix, idx) {
+  const answerEl = document.getElementById(prefix + '-edit-answer-' + idx);
+  const sourcesEl = document.getElementById(prefix + '-edit-sources-' + idx);
+  const kpEl = document.getElementById(prefix + '-edit-kp-' + idx);
+
+  if (answerEl) answers[idx].answer = answerEl.value;
+  if (sourcesEl) {
+    const sv = sourcesEl.value.trim();
+    answers[idx].sources = sv ? sv.split(',').map(s => s.trim()) : [];
+  }
+  if (kpEl) {
+    const kv = kpEl.value.trim();
+    answers[idx].key_points = kv ? kv.split('\n').map(s => s.trim()).filter(Boolean) : [];
+  }
+
+  renderAnswerRow(prefix, idx);
+  updateSummary();
+  toast('Answer updated');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  ANSWER FLOW
+// ══════════════════════════════════════════════════════════════════════
+btnAnswer.addEventListener('click', async () => {
+  const checked = Array.from(document.querySelectorAll('.q-check:checked'));
+  const selected = checked.map(cb => questions[parseInt(cb.dataset.idx)]);
+  if (!selected.length) { toast('No questions selected', 'error'); return; }
+
+  showStep('answering');
+  answeringDone = false;
+  answers = new Array(selected.length).fill(null);
+
+  // Build live table
+  const liveBody = document.getElementById('answers-live-body');
+  liveBody.innerHTML = '';
+  selected.forEach((q, i) => {
+    const tr = document.createElement('tr');
+    tr.id = 'live-row-' + i;
+    tr.innerHTML = `
+      <td class="col-id">${esc(q.id)}</td>
+      <td>${esc(q.question)}</td>
+      <td id="live-answer-${i}" style="color:var(--text-dim);">-</td>
+      <td class="col-cat" id="live-conf-${i}">-</td>
+      <td id="live-actions-${i}"><span class="status status-loading"><span class="spinner"></span> Queued</span></td>
+    `;
+    liveBody.appendChild(tr);
+  });
+
+  const btnViewEarly = document.getElementById('btn-view-results-early');
+  btnViewEarly.classList.add('hidden');
+
+  const stopTimer = startTimer(document.getElementById('answer-timer'));
+  const progBar = document.getElementById('answer-progress');
+  const countEl = document.getElementById('answer-count');
+  const labelEl = document.getElementById('answering-label');
+  let completed = 0;
+  const total = selected.length;
+  const CONCURRENCY = 10;
+  countEl.textContent = `0 / ${total} questions`;
+
+  const queue = selected.map((q, i) => ({ q, i }));
+  let idx = 0;
+
+  async function worker() {
+    while (idx < queue.length) {
+      const current = idx++;
+      const { q, i } = queue[current];
+
+      // Mark in-progress
+      const actCell = document.getElementById('live-actions-' + i);
+      if (actCell) actCell.innerHTML = '<span class="status status-loading"><span class="spinner"></span> Answering</span>';
+
+      try {
+        const resp = await fetch(API + '/answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q.question }),
+        });
+        const data = await resp.json();
+        answers[i] = { ...q, ...data };
+      } catch (err) {
+        answers[i] = { ...q, answer: 'Error: ' + err.message, confidence: 'ERROR', sources: [], key_points: [] };
+      }
+
+      // Render the completed row with full answer + Edit/Retry buttons
+      renderAnswerRow('live', i);
+
+      completed++;
+      const pct = Math.round((completed / total) * 100);
+      progBar.style.width = pct + '%';
+      countEl.textContent = `${completed} / ${total} questions`;
+      labelEl.textContent = `Answering question ${Math.min(completed + CONCURRENCY, total)} of ${total}...`;
+
+      if (completed >= 1 && !answeringDone) {
+        btnViewEarly.classList.remove('hidden');
+      }
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(CONCURRENCY, total) }, () => worker());
+  await Promise.all(workers);
+
+  stopTimer();
+  answeringDone = true;
+
+  document.getElementById('answering-status').innerHTML =
+    '<span class="status status-success">Complete</span>';
+  labelEl.textContent = 'All questions answered';
+  btnViewEarly.textContent = 'View All Results';
+  btnViewEarly.classList.remove('hidden');
+
+  renderResults();
+  setTimeout(() => showStep('results'), 800);
+});
+
+// "View Results" early
+document.getElementById('btn-view-results-early').addEventListener('click', () => {
+  renderResults();
+  showStep('results');
+});
+
+// ══════════════════════════════════════════════════════════════════════
+//  SUMMARY + RESULTS TABLE
+// ══════════════════════════════════════════════════════════════════════
+function updateSummary() {
+  const grid = document.getElementById('summary-grid');
+  const valid = answers.filter(a => a !== null);
+  const counts = { HIGH: 0, MEDIUM: 0, LOW: 0, ERROR: 0, UNKNOWN: 0 };
+  valid.forEach(a => { const c = (a.confidence || 'UNKNOWN').toUpperCase(); counts[c] = (counts[c] || 0) + 1; });
+  const pending = answers.length - valid.length;
+  grid.innerHTML = `
+    <div class="summary-stat"><div class="value">${valid.length}${pending ? '<span style="font-size:14px;color:var(--text-dim);">/' + answers.length + '</span>' : ''}</div><div class="label">${pending ? 'Answered' : 'Total'}</div></div>
+    <div class="summary-stat"><div class="value" style="color:var(--green)">${counts.HIGH}</div><div class="label">High</div></div>
+    <div class="summary-stat"><div class="value" style="color:var(--yellow)">${counts.MEDIUM}</div><div class="label">Medium</div></div>
+    <div class="summary-stat"><div class="value" style="color:var(--red)">${counts.LOW + counts.ERROR}</div><div class="label">Low / Error</div></div>
+    ${pending ? '<div class="summary-stat"><div class="value" style="color:var(--accent)">' + pending + '</div><div class="label">Pending</div></div>' : ''}
+  `;
+}
+
+function renderResults() {
+  updateSummary();
+  const tbody = document.getElementById('results-body');
+  tbody.innerHTML = '';
+  answers.forEach((a, i) => {
+    const tr = document.createElement('tr');
+    tr.id = 'result-row-' + i;
+    tbody.appendChild(tr);
+    renderAnswerRow('result', i);
+  });
+}
+
+// ── Download Excel ──────────────────────────────────────────────────
+btnDownload.addEventListener('click', () => {
+  const valid = answers.filter(a => a !== null);
+  if (!valid.length) { toast('No answers to download', 'error'); return; }
+  const data = valid.map(a => ({
+    'ID': a.id,
+    'Question': a.question,
+    'Category': a.category,
+    'Answer': a.answer,
+    'Confidence': (a.confidence || '').toUpperCase(),
+    'Sources': Array.isArray(a.sources) ? a.sources.join(', ') : (a.sources || ''),
+    'Key Points': Array.isArray(a.key_points) ? a.key_points.join('\n') : (a.key_points || ''),
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{ wch: 10 }, { wch: 60 }, { wch: 18 }, { wch: 80 }, { wch: 12 }, { wch: 40 }, { wch: 40 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'RFP Responses');
+  XLSX.writeFile(wb, 'RFP_Responses.xlsx');
+  toast('Excel downloaded');
+});
+
+// ── Navigation ──────────────────────────────────────────────────────
+document.getElementById('btn-back-progress').addEventListener('click', () => showStep('answering'));
+btnStartOver.addEventListener('click', () => {
+  clearFile(); questions = []; answers = []; answeringDone = true; showStep('upload');
+});
+
+// ── Init ────────────────────────────────────────────────────────────
+showStep('upload');
+</script>
+</body>
+</html>
