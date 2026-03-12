@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billing Compliance Auditor — Airia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000000;
+    --surface: #1A1046;
+    --surface2: #150d38;
+    --border: #2d2365;
+    --text: #F2F2F2;
+    --text-dim: #9994b8;
+    --accent: #4E2FD2;
+    --accent-hover: #6242e8;
+    --accent-glow: rgba(78, 47, 210, 0.2);
+    --lavender: #B4B2FF;
+    --plum: #3E2BAB;
+    --chartreuse: #E1F018;
+    --aqua: #00C8F5;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --orange: #fb923c;
+    --radius: 15px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(98,98,244,0.18) 0%, rgba(60,138,233,0.08) 40%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -15%;
+    right: -5%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(2,223,255,0.12) 0%, rgba(78,47,210,0.06) 45%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  header .logo-wrap {
+    position: relative;
+    height: 36px;
+    display: flex;
+    align-items: center;
+  }
+  header .logo-wrap img {
+    height: 36px;
+    width: auto;
+  }
+  header .logo-mark {
+    height: 36px;
+    width: 40px;
+    object-fit: cover;
+    object-position: left center;
+  }
+  header .logo-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #F2F2F2;
+    margin-left: 8px;
+    letter-spacing: -0.5px;
+  }
+  header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; }
+  header .subtitle { color: var(--text-dim); font-family: 'Space Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin-left: auto; }
+
+  /* Mode tabs */
+  .mode-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 32px;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 4px;
+  }
+  .mode-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: center;
+  }
+  .mode-tab:hover { color: var(--text); }
+  .mode-tab.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 12px rgba(78, 47, 210, 0.3);
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+    background: rgba(26, 16, 70, 0.85);
+  }
+  .card h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  /* Upload area */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 48px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .upload-zone input { display: none; }
+  .upload-zone .icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+    display: block;
+    background: linear-gradient(135deg, #00CAFF, #4E2FD2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .upload-zone .label { font-size: 15px; font-weight: 500; }
+  .upload-zone .hint { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: 8px;
+    margin-top: 16px;
+  }
+  .file-info .name { font-weight: 500; font-size: 14px; }
+  .file-info .size { color: var(--text-dim); font-size: 12px; margin-left: auto; }
+  .file-info .remove {
+    color: var(--red);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0 4px;
+  }
+
+  /* Input field */
+  .input-group {
+    margin-bottom: 16px;
+  }
+  .input-group label {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .input-field {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .input-field::placeholder { color: var(--text-dim); }
+
+  /* Select / dropdown */
+  .select-field {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239994b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .select-field:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 20px rgba(78, 47, 210, 0.4); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--text);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.08); }
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  /* Progress */
+  .progress-wrap { margin-top: 20px; }
+  .progress-bar-bg {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6262F4, #3C8AE9, #02DFFF);
+    border-radius: 3px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  /* Status pill */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .status-loading { background: rgba(180,178,255,0.15); color: var(--lavender); }
+  .status-success { background: rgba(52,211,153,0.15); color: var(--green); }
+  .status-error { background: rgba(248,113,113,0.15); color: var(--red); }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .summary-stat {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-stat .value { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; }
+  .summary-stat .label { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Clients list */
+  .clients-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .client-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+  .client-card:hover { border-color: var(--accent); }
+  .client-card .client-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  .client-card .client-meta {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .client-card .client-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 12px;
+  }
+  .rule-count {
+    display: inline-block;
+    background: rgba(78, 47, 210, 0.2);
+    color: var(--lavender);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* Result markdown */
+  .result-content {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .result-content h1, .result-content h2, .result-content h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    margin: 16px 0 8px;
+  }
+  .result-content h1 { font-size: 20px; }
+  .result-content h2 { font-size: 17px; }
+  .result-content h3 { font-size: 15px; }
+  .result-content p { margin-bottom: 8px; }
+  .result-content ul, .result-content ol { margin: 8px 0 8px 20px; }
+  .result-content li { margin-bottom: 4px; }
+  .result-content strong { color: var(--text); }
+  .result-content code {
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .result-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .result-content th, .result-content td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  .result-content th {
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Severity badges */
+  .sev-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .sev-high { background: rgba(248,113,113,0.2); color: var(--red); }
+  .sev-medium { background: rgba(251,191,36,0.2); color: var(--yellow); }
+  .sev-low { background: rgba(251,146,60,0.2); color: var(--orange); }
+
+  .hidden { display: none !important; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-success { background: var(--accent); color: #fff; }
+  .toast-error { background: var(--red); color: #fff; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--plum); border-radius: 3px; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-dim);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-wrap">
+      <img class="logo-mark" src="airia-logo.png" alt="Airia">
+      <span class="logo-text">airia</span>
+    </div>
+    <div>
+      <h1>Billing Compliance Auditor</h1>
+    </div>
+    <span class="subtitle">Powered by AI</span>
+  </header>
+
+  <!-- Mode Tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tab-evaluate" onclick="switchMode('evaluate')">Evaluate Invoice</button>
+    <button class="mode-tab" id="tab-guidelines" onclick="switchMode('guidelines')">Load Guidelines</button>
+    <button class="mode-tab" id="tab-clients" onclick="switchMode('clients')">Loaded Clients</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!--  MODE: EVALUATE INVOICE                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+
+  <!-- Evaluate: Upload -->
+  <div id="eval-upload" class="card">
+    <h2>Audit Invoice Against Billing Guidelines</h2>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">
+      Upload a legal invoice and select the client whose guidelines apply. The AI will evaluate every line item for compliance violations.
+    </p>
+    <div class="input-group">
+      <label>Client</label>
+      <select class="select-field" id="eval-client">
+        <option value="">Loading clients...</option>
+      </select>
+    </div>
+    <div class="upload-zone" id="eval-drop-zone">
+      <span class="icon">+</span>
+      <div class="label">Drop your invoice file here or click to browse</div>
+      <div class="hint">Supports PDF, XLSX, CSV, LEDES 1998B</div>
+      <input type="file" id="eval-file-input" accept=".pdf,.xlsx,.csv,.txt,.ledes">
+    </div>
+    <div id="eval-file-info" class="file-info hidden">
+      <span class="name" id="eval-file-name"></span>
+      <span class="size" id="eval-file-size"></span>
+      <span class="remove" id="eval-file-remove" title="Remove">&times;</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" id="btn-evaluate" disabled>Evaluate Compliance</button>
+    </div>
+  </div>
+
+  <!-- Evaluate: Processing -->
+  <div id="eval-processing" class="card hidden">
+    <h2>Evaluating Invoice</h2>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="status status-loading"><span class="spinner"></span> <span id="eval-status-text">Uploading invoice...</span></span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="eval-progress"></div></div>
+      <div class="progress-text">
+        <span id="eval-stage">Preparing</span>
+        <span id="eval-timer">0s</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evaluate: Results -->
+  <div id="eval-results" class="card hidden">
+    <h2>Compliance Report <span id="eval-client-label" style="color:var(--text-dim);font-weight:400;font-size:14px;"></span></h2>
+    <div class="summary-grid" id="eval-summary"></div>
+    <div class="btn-group" style="margin-bottom:20px;">
+      <button class="btn btn-primary" id="btn-download-xlsx">Download XLSX Report</button>
+      <button class="btn btn-secondary" id="btn-eval-again">Evaluate Another</button>
+    </div>
+    <div class="result-content" id="eval-result-body"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!--  MODE: LOAD GUIDELINES                                         -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+
+  <!-- Guidelines: Upload -->
+  <div id="guide-upload" class="card hidden">
+    <h2>Load Client Billing Guidelines</h2>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">
+      Upload a client's outside counsel billing guidelines document. The AI will extract every rule, rate cap, and restriction for use in invoice auditing.
+    </p>
+    <div class="input-group">
+      <label>Client Name</label>
+      <input type="text" class="input-field" id="guide-client-name" placeholder="e.g. Acme Corp">
+    </div>
+    <div class="upload-zone" id="guide-drop-zone">
+      <span class="icon">+</span>
+      <div class="label">Drop the guidelines document here or click to browse</div>
+      <div class="hint">Supports PDF, DOCX, TXT</div>
+      <input type="file" id="guide-file-input" accept=".pdf,.docx,.txt">
+    </div>
+    <div id="guide-file-info" class="file-info hidden">
+      <span class="name" id="guide-file-name"></span>
+      <span class="size" id="guide-file-size"></span>
+      <span class="remove" id="guide-file-remove" title="Remove">&times;</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" id="btn-load-guidelines" disabled>Extract Rules</button>
+    </div>
+  </div>
+
+  <!-- Guidelines: Processing -->
+  <div id="guide-processing" class="card hidden">
+    <h2>Extracting Rules</h2>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="status status-loading"><span class="spinner"></span> <span id="guide-status-text">Uploading document...</span></span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="guide-progress"></div></div>
+      <div class="progress-text">
+        <span id="guide-stage">Preparing</span>
+        <span id="guide-timer">0s</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guidelines: Result -->
+  <div id="guide-result" class="card hidden">
+    <h2>Guidelines Loaded</h2>
+    <div id="guide-result-body" class="result-content"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="switchMode('evaluate')">Evaluate an Invoice</button>
+      <button class="btn btn-secondary" onclick="guideReset()">Load Another</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!--  MODE: LOADED CLIENTS                                          -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+
+  <div id="clients-view" class="card hidden">
+    <h2>Loaded Client Guidelines</h2>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">
+      Clients whose billing guidelines have been extracted and stored. Select a client below then switch to "Evaluate Invoice" to audit against their rules.
+    </p>
+    <div id="clients-list" class="clients-list">
+      <div class="empty-state">
+        <div class="icon" style="opacity:0.4;">--</div>
+        <p>Loading clients...</p>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-secondary" id="btn-refresh-clients" onclick="loadClients()">Refresh</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin + '/api';
+
+let evalFile = null;
+let guideFile = null;
+let currentMode = 'evaluate';
+let clients = [];
+let lastXlsxUrl = null;
+
+// ── DOM refs ────────────────────────────────────────────────────────
+const evalDropZone = document.getElementById('eval-drop-zone');
+const evalFileInput = document.getElementById('eval-file-input');
+const evalFileInfo = document.getElementById('eval-file-info');
+const evalFileName = document.getElementById('eval-file-name');
+const evalFileSize = document.getElementById('eval-file-size');
+const evalFileRemove = document.getElementById('eval-file-remove');
+const btnEvaluate = document.getElementById('btn-evaluate');
+const evalClientSelect = document.getElementById('eval-client');
+
+const guideDropZone = document.getElementById('guide-drop-zone');
+const guideFileInput = document.getElementById('guide-file-input');
+const guideFileInfo = document.getElementById('guide-file-info');
+const guideFileName = document.getElementById('guide-file-name');
+const guideFileSize = document.getElementById('guide-file-size');
+const guideFileRemove = document.getElementById('guide-file-remove');
+const btnLoadGuidelines = document.getElementById('btn-load-guidelines');
+
+
+// ── Mode switching ──────────────────────────────────────────────────
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + mode).classList.add('active');
+
+  // Hide all sections
+  ['eval-upload','eval-processing','eval-results',
+   'guide-upload','guide-processing','guide-result',
+   'clients-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
+
+  if (mode === 'evaluate') {
+    document.getElementById('eval-upload').classList.remove('hidden');
+    loadClients();
+  } else if (mode === 'guidelines') {
+    document.getElementById('guide-upload').classList.remove('hidden');
+  } else if (mode === 'clients') {
+    document.getElementById('clients-view').classList.remove('hidden');
+    loadClients();
+  }
+}
+
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function startTimer(el) {
+  const start = Date.now();
+  const interval = setInterval(() => {
+    el.textContent = ((Date.now() - start) / 1000).toFixed(0) + 's';
+  }, 1000);
+  return () => clearInterval(interval);
+}
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast toast-' + type + ' show';
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function updateEvalButton() {
+  btnEvaluate.disabled = !evalFile || !evalClientSelect.value;
+}
+
+function updateGuideButton() {
+  const name = document.getElementById('guide-client-name').value.trim();
+  btnLoadGuidelines.disabled = !guideFile || !name;
+}
+
+
+// ── Simple markdown renderer ────────────────────────────────────────
+function renderMarkdown(text) {
+  if (!text) return '';
+  let html = esc(text);
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // Bold and italic
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Links
+  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--aqua);">$1</a>');
+
+  // Unordered lists
+  html = html.replace(/^[*-] (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+  // Tables (pipe-separated)
+  html = html.replace(/^\|(.+)\|$/gm, (match, inner) => {
+    const cells = inner.split('|').map(c => c.trim());
+    return '<tr>' + cells.map(c => {
+      if (/^[\s:-]+$/.test(c)) return null;
+      return '<td>' + c + '</td>';
+    }).filter(Boolean).join('') + '</tr>';
+  });
+  html = html.replace(/(<tr>.*<\/tr>\n?)+/g, '<table>$&</table>');
+  // Remove separator rows
+  html = html.replace(/<tr>(<td>[\s:-]+<\/td>)+<\/tr>/g, '');
+  // Make first row headers
+  html = html.replace(/<table>\s*<tr>(.*?)<\/tr>/g, (m, row) => {
+    return '<table><thead><tr>' + row.replace(/<td>/g, '<th>').replace(/<\/td>/g, '</th>') + '</tr></thead>';
+  });
+
+  // Line breaks → paragraphs
+  html = html.replace(/\n\n+/g, '</p><p>');
+  html = '<p>' + html + '</p>';
+  html = html.replace(/<p>\s*<(h[123]|ul|table|thead)/g, '<$1');
+  html = html.replace(/<\/(h[123]|ul|table)>\s*<\/p>/g, '</$1>');
+
+  return html;
+}
+
+
+// ── Load clients ────────────────────────────────────────────────────
+async function loadClients() {
+  try {
+    const resp = await fetch(API + '/clients');
+    const data = await resp.json();
+    clients = data.clients || [];
+
+    // Update the evaluate dropdown
+    evalClientSelect.innerHTML = '';
+    if (clients.length === 0) {
+      evalClientSelect.innerHTML = '<option value="">No clients loaded — load guidelines first</option>';
+    } else {
+      evalClientSelect.innerHTML = '<option value="">Select a client...</option>';
+      clients.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = `${c.name} (${c.rule_count} rules)`;
+        evalClientSelect.appendChild(opt);
+      });
+    }
+    updateEvalButton();
+
+    // Update clients view
+    const listEl = document.getElementById('clients-list');
+    if (clients.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="icon" style="opacity:0.4;">--</div>
+          <p>No clients loaded yet. Switch to "Load Guidelines" to add a client.</p>
+        </div>
+      `;
+    } else {
+      listEl.innerHTML = clients.map(c => `
+        <div class="client-card">
+          <div class="client-name">${esc(c.name)}</div>
+          <div class="client-meta">
+            <span><span class="rule-count">${c.rule_count} rules</span></span>
+            ${c.last_updated ? '<span>Updated: ' + esc(c.last_updated.split('T')[0]) + '</span>' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    evalClientSelect.innerHTML = '<option value="">Error loading clients</option>';
+  }
+}
+
+
+// ── Evaluate: File handling ─────────────────────────────────────────
+function setEvalFile(file) {
+  evalFile = file;
+  evalFileName.textContent = file.name;
+  evalFileSize.textContent = formatSize(file.size);
+  evalFileInfo.classList.remove('hidden');
+  updateEvalButton();
+}
+
+function clearEvalFile() {
+  evalFile = null;
+  evalFileInput.value = '';
+  evalFileInfo.classList.add('hidden');
+  updateEvalButton();
+}
+
+evalDropZone.addEventListener('click', () => evalFileInput.click());
+evalFileInput.addEventListener('change', (e) => { if (e.target.files[0]) setEvalFile(e.target.files[0]); });
+evalFileRemove.addEventListener('click', (e) => { e.stopPropagation(); clearEvalFile(); });
+evalDropZone.addEventListener('dragover', (e) => { e.preventDefault(); evalDropZone.classList.add('drag-over'); });
+evalDropZone.addEventListener('dragleave', () => evalDropZone.classList.remove('drag-over'));
+evalDropZone.addEventListener('drop', (e) => {
+  e.preventDefault(); evalDropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) setEvalFile(e.dataTransfer.files[0]);
+});
+evalClientSelect.addEventListener('change', updateEvalButton);
+
+
+// ── Evaluate: Run ───────────────────────────────────────────────────
+btnEvaluate.addEventListener('click', async () => {
+  if (!evalFile || !evalClientSelect.value) return;
+
+  const clientName = evalClientSelect.value;
+
+  // Show processing
+  document.getElementById('eval-upload').classList.add('hidden');
+  document.getElementById('eval-processing').classList.remove('hidden');
+
+  const stopTimer = startTimer(document.getElementById('eval-timer'));
+  const prog = document.getElementById('eval-progress');
+  const statusText = document.getElementById('eval-status-text');
+  const stage = document.getElementById('eval-stage');
+
+  try {
+    prog.style.width = '10%';
+    statusText.textContent = 'Uploading invoice...';
+    stage.textContent = 'Uploading file';
+
+    // Upload + evaluate in one call
+    const formData = new FormData();
+    formData.append('file', evalFile);
+    formData.append('client_name', clientName);
+
+    prog.style.width = '25%';
+    statusText.textContent = 'Analyzing invoice against guidelines...';
+    stage.textContent = 'AI is evaluating every line item';
+
+    const resp = await fetch(API + '/evaluate', { method: 'POST', body: formData });
+    prog.style.width = '90%';
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    prog.style.width = '100%';
+    stopTimer();
+
+    lastXlsxUrl = data.xlsx_url;
+
+    // Show results
+    document.getElementById('eval-processing').classList.add('hidden');
+    document.getElementById('eval-results').classList.remove('hidden');
+    document.getElementById('eval-client-label').textContent = '— ' + clientName;
+
+    // Parse summary stats from the result markdown
+    renderEvalResults(data.result, clientName);
+
+    toast('Compliance evaluation complete');
+  } catch (err) {
+    stopTimer();
+    toast('Error: ' + err.message, 'error');
+    document.getElementById('eval-processing').classList.add('hidden');
+    document.getElementById('eval-upload').classList.remove('hidden');
+  }
+});
+
+function renderEvalResults(resultText, clientName) {
+  const summaryEl = document.getElementById('eval-summary');
+  const bodyEl = document.getElementById('eval-result-body');
+
+  // Try to parse key numbers from the markdown
+  const totalMatch = resultText.match(/Total Entries Reviewed[:\s|]*(\d+)/i);
+  const violMatch = resultText.match(/Violation(?:s)? (?:Count|Found)[:\s|]*(\d+)/i) ||
+                    resultText.match(/(\d+)\s*violation/i);
+  const feesMatch = resultText.match(/Total Fees[:\s|]*\$?([\d,]+\.?\d*)/i);
+  const riskMatch = resultText.match(/Amount at Risk[:\s|]*\$?([\d,]+\.?\d*)/i);
+  const highMatch = resultText.match(/High[:\s|]*(\d+)/i);
+  const medMatch = resultText.match(/Medium[:\s|]*(\d+)/i);
+  const lowMatch = resultText.match(/Low[:\s|]*(\d+)/i);
+
+  const total = totalMatch ? totalMatch[1] : '--';
+  const violations = violMatch ? violMatch[1] : '--';
+  const fees = feesMatch ? '$' + feesMatch[1] : '--';
+  const risk = riskMatch ? '$' + riskMatch[1] : '--';
+  const high = highMatch ? highMatch[1] : '0';
+  const med = medMatch ? medMatch[1] : '0';
+  const low = lowMatch ? lowMatch[1] : '0';
+
+  summaryEl.innerHTML = `
+    <div class="summary-stat"><div class="value">${total}</div><div class="label">Entries Reviewed</div></div>
+    <div class="summary-stat"><div class="value" style="color:var(--red)">${violations}</div><div class="label">Violations</div></div>
+    <div class="summary-stat"><div class="value" style="color:var(--text)">${fees}</div><div class="label">Total Fees</div></div>
+    <div class="summary-stat"><div class="value" style="color:var(--red)">${risk}</div><div class="label">Amount at Risk</div></div>
+    <div class="summary-stat"><div class="value" style="color:var(--red)">${high}</div><div class="label">High</div></div>
+    <div class="summary-stat"><div class="value" style="color:var(--yellow)">${med}</div><div class="label">Medium</div></div>
+    <div class="summary-stat"><div class="value" style="color:var(--orange)">${low}</div><div class="label">Low</div></div>
+  `;
+
+  bodyEl.innerHTML = renderMarkdown(resultText);
+}
+
+// Download XLSX
+document.getElementById('btn-download-xlsx').addEventListener('click', () => {
+  if (lastXlsxUrl) {
+    window.open(lastXlsxUrl, '_blank');
+  } else {
+    toast('No XLSX report available', 'error');
+  }
+});
+
+// Evaluate another
+document.getElementById('btn-eval-again').addEventListener('click', () => {
+  clearEvalFile();
+  lastXlsxUrl = null;
+  document.getElementById('eval-results').classList.add('hidden');
+  document.getElementById('eval-upload').classList.remove('hidden');
+});
+
+
+// ── Guidelines: File handling ───────────────────────────────────────
+function setGuideFile(file) {
+  guideFile = file;
+  guideFileName.textContent = file.name;
+  guideFileSize.textContent = formatSize(file.size);
+  guideFileInfo.classList.remove('hidden');
+  updateGuideButton();
+}
+
+function clearGuideFile() {
+  guideFile = null;
+  guideFileInput.value = '';
+  guideFileInfo.classList.add('hidden');
+  updateGuideButton();
+}
+
+guideDropZone.addEventListener('click', () => guideFileInput.click());
+guideFileInput.addEventListener('change', (e) => { if (e.target.files[0]) setGuideFile(e.target.files[0]); });
+guideFileRemove.addEventListener('click', (e) => { e.stopPropagation(); clearGuideFile(); });
+guideDropZone.addEventListener('dragover', (e) => { e.preventDefault(); guideDropZone.classList.add('drag-over'); });
+guideDropZone.addEventListener('dragleave', () => guideDropZone.classList.remove('drag-over'));
+guideDropZone.addEventListener('drop', (e) => {
+  e.preventDefault(); guideDropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) setGuideFile(e.dataTransfer.files[0]);
+});
+document.getElementById('guide-client-name').addEventListener('input', updateGuideButton);
+
+
+// ── Guidelines: Run ─────────────────────────────────────────────────
+btnLoadGuidelines.addEventListener('click', async () => {
+  const clientName = document.getElementById('guide-client-name').value.trim();
+  if (!guideFile || !clientName) return;
+
+  document.getElementById('guide-upload').classList.add('hidden');
+  document.getElementById('guide-processing').classList.remove('hidden');
+
+  const stopTimer = startTimer(document.getElementById('guide-timer'));
+  const prog = document.getElementById('guide-progress');
+  const statusText = document.getElementById('guide-status-text');
+  const stage = document.getElementById('guide-stage');
+
+  try {
+    prog.style.width = '15%';
+    statusText.textContent = 'Uploading guidelines document...';
+    stage.textContent = 'Uploading';
+
+    const formData = new FormData();
+    formData.append('file', guideFile);
+    formData.append('client_name', clientName);
+
+    prog.style.width = '30%';
+    statusText.textContent = 'AI is extracting every rule and restriction...';
+    stage.textContent = 'Extracting rules from document';
+
+    const resp = await fetch(API + '/load-guidelines', { method: 'POST', body: formData });
+    prog.style.width = '95%';
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    prog.style.width = '100%';
+    stopTimer();
+
+    document.getElementById('guide-processing').classList.add('hidden');
+    document.getElementById('guide-result').classList.remove('hidden');
+    document.getElementById('guide-result-body').innerHTML = renderMarkdown(data.result);
+
+    toast('Guidelines loaded for ' + clientName);
+    loadClients(); // Refresh client list
+  } catch (err) {
+    stopTimer();
+    toast('Error: ' + err.message, 'error');
+    document.getElementById('guide-processing').classList.add('hidden');
+    document.getElementById('guide-upload').classList.remove('hidden');
+  }
+});
+
+function guideReset() {
+  clearGuideFile();
+  document.getElementById('guide-client-name').value = '';
+  updateGuideButton();
+  document.getElementById('guide-result').classList.add('hidden');
+  document.getElementById('guide-upload').classList.remove('hidden');
+}
+
+
+// ── Init ────────────────────────────────────────────────────────────
+switchMode('evaluate');
+</script>
+</body>
+</html>
