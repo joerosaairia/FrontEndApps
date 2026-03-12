@@ -51,17 +51,11 @@ def airia_upload(file_bytes, filename, content_type):
     return resp.json().get("imageUrl", "")
 
 
-def airia_execute_multipart(pipeline_id, user_input, file_url, timeout=600):
-    """Execute a multipart pipeline with file URL + message."""
-    payload = {"userInput": user_input}
-    resp = requests.post(
-        f"{AIRIA_BASE}/v1/PipelineExecution/Multipart/{pipeline_id}",
-        json=payload,
-        headers=HDR_JSON,
-        timeout=timeout,
-    )
-    resp.raise_for_status()
-    return resp.json().get("result", "")
+def airia_execute_with_file(pipeline_id, user_input, file_bytes, filename, content_type, timeout=600):
+    """Upload file to Airia storage, then execute pipeline with URL in userInput."""
+    file_url = airia_upload(file_bytes, filename, content_type)
+    full_input = f"{user_input}\n\nFile URL: {file_url}"
+    return airia_execute(pipeline_id, full_input, timeout=timeout)
 
 
 def airia_execute(pipeline_id, user_input, timeout=600):
@@ -161,13 +155,12 @@ def load_guidelines():
 
         file_bytes = f.read()
 
-        # Upload file to Airia storage first
-        file_url = airia_upload(file_bytes, f.filename, f.content_type)
-
-        # Execute the Guidelines Extractor pipeline
-        # The pipeline expects: file URL as multipart + client name as message
-        user_input = f"{client_name}\n\nFile URL: {file_url}"
-        result = airia_execute(GUIDELINES_PIPELINE, user_input, timeout=600)
+        # Execute the Guidelines Extractor pipeline via multipart
+        # The pipeline's Python step reads files from client_data['files']
+        result = airia_execute_with_file(
+            GUIDELINES_PIPELINE, client_name,
+            file_bytes, f.filename, f.content_type, timeout=600,
+        )
 
         # Parse the result to check for errors
         if "ERROR" in result.upper() and len(result) < 500:
@@ -192,12 +185,11 @@ def evaluate():
 
         file_bytes = f.read()
 
-        # Upload file to Airia storage first
-        file_url = airia_upload(file_bytes, f.filename, f.content_type)
-
-        # Execute the Billing Evaluator pipeline
-        user_input = f"{client_name}\n\nFile URL: {file_url}"
-        result = airia_execute(EVALUATOR_PIPELINE, user_input, timeout=600)
+        # Execute the Billing Evaluator pipeline via multipart
+        result = airia_execute_with_file(
+            EVALUATOR_PIPELINE, client_name,
+            file_bytes, f.filename, f.content_type, timeout=600,
+        )
 
         # Parse the result — it contains a markdown summary with an XLSX download link
         if "ERROR" in result[:200].upper():
